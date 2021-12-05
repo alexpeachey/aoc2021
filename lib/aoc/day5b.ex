@@ -2,60 +2,29 @@ defmodule AOC.Day5b do
   import AOC
 
   def solution(path) do
-    lines =
-      path
-      |> read_lines()
-      |> Enum.map(&convert_lines/1)
-
-    maxx =
-      lines
-      |> Enum.map(fn [{x1, _}, {x2, _}] -> max(x1, x2) end)
-      |> Enum.max()
-
-    maxy =
-      lines
-      |> Enum.map(fn [{_, y1}, {_, y2}] -> max(y1, y2) end)
-      |> Enum.max()
-
-    lines
-    |> create_map(maxx, maxy)
-    |> count_danger()
+    path
+    |> read_lines()
+    |> Enum.map(&convert_lines/1)
+    |> Enum.flat_map(&explode_to_points/1)
+    |> Enum.frequencies()
+    |> Map.values()
+    |> Enum.count(fn n -> n >= 2 end)
   end
 
-  def count_danger(map) do
-    map
-    |> Enum.map(fn row ->
-      row
-      |> Enum.count(fn c -> c >= 2 end)
-    end)
-    |> Enum.sum()
+  def explode_to_points([{x, y1}, {x, y2}]) do
+    y1..y2
+    |> Enum.map(fn y -> {x, y} end)
   end
 
-  def create_map(lines, maxx, maxy) do
-    0..maxy
-    |> Enum.map(fn y ->
-      0..maxx
-      |> Enum.map(fn x ->
-        lines
-        |> Enum.count(&contains_point(&1, {x, y}))
-      end)
-    end)
+  def explode_to_points([{x1, y}, {x2, y}]) do
+    x1..x2
+    |> Enum.map(fn x -> {x, y} end)
   end
 
-  def contains_point([{x1, y1}, {x1, y2}], {x, y}) do
-    x1 == x &&
-      y1..y2 |> Enum.member?(y)
-  end
-
-  def contains_point([{x1, y1}, {x2, y1}], {x, y}) do
-    x1..x2 |> Enum.member?(x) &&
-      y1 == y
-  end
-
-  def contains_point([{x1, y1}, {x2, y2}], {x, y}) do
-    x1..x2 |> Enum.member?(x) &&
-      y1..y2 |> Enum.member?(y) &&
-      (y - y1) / (y2 - y1) == (x - x1) / (x2 - x1)
+  def explode_to_points([{x1, y1}, {x2, y2}]) do
+    dx = if x1 < x2, do: 1, else: -1
+    dy = if y1 < y2, do: 1, else: -1
+    [{x1, y1} | explode_to_points([{x1 + dx, y1 + dy}, {x2, y2}])]
   end
 
   def convert_lines(line) do
